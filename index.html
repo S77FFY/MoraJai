@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mora Jai Puzzle Box</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --wood-dark: #3d2b1f;
+    --wood-mid: #5c3d28;
+    --wood-light: #8b5e3c;
+    --gold: #c9993a;
+    --gold-bright: #f0c060;
+    --parchment: #f2e8d5;
+    --parchment-dark: #e0d0b0;
+    --ink: #2a1a0e;
+    --ink-light: #4a3020;
+
+    /* Tile colors */
+    --col-gray: #8a8a8a;
+    --col-black: #1a1a1a;
+    --col-red: #cc2200;
+    --col-yellow: #e8c020;
+    --col-purple: #7020b0;
+    --col-orange: #e06010;
+    --col-white: #f0eeee;
+    --col-pink: #e060a0;
+    --col-green: #20a040;
+    --col-blue: #2060c0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1a0f08;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, #3d2010 0%, #1a0f08 70%);
+    min-height: 100vh;
+    font-family: 'Crimson Text', Georgia, serif;
+    color: var(--parchment);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+    transition: background-image 0.4s ease;
+  }
+  /* Atelier play: light-blue neon backdrop instead of brown */
+  body.atelier-active {
+    background: #1a3a6e;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, #4f8fd6 0%, #1a3a6e 60%, #0a1f44 100%);
+  }
+
+  .version-badge {
+    position: fixed;
+    top: 8px; right: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--gold);
+    opacity: 0.55;
+    letter-spacing: 0.05em;
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.4rem, 5vw, 2.2rem);
+    color: var(--gold-bright);
+    text-shadow: 0 0 20px rgba(240,192,96,0.4);
+    letter-spacing: 0.08em;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-family: 'Crimson Text', serif;
+    font-style: italic;
+    color: var(--parchment-dark);
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  /* ── LEVEL SELECT ── */
+  #level-select {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .allowance-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 auto 16px;
+    padding: 8px 16px;
+    width: fit-content;
+    background: rgba(120,84,20,0.18);
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+  }
+  .allowance-coin { width: 26px; height: 26px; display: inline-flex; }
+  .allowance-coin svg { width: 100%; height: 100%; }
+  .allowance-label {
+    font-family: 'Cinzel', serif; font-size: 0.8rem; letter-spacing: 0.08em;
+    color: var(--parchment); text-transform: uppercase;
+  }
+  .allowance-value {
+    font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 700;
+    color: #e8b53a; min-width: 1.2em; text-align: center;
+  }
+
+  .level-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    color: var(--gold-bright);
+    letter-spacing: 0.15em;
+    text-align: left;
+    margin: 14px 0 10px;
+    text-transform: uppercase;
+    text-shadow: 0 0 16px rgba(240,192,96,0.35);
+    border: none;
+    border-bottom: 1px solid rgba(201,153,58,0.3);
+    background: none;
+    padding: 4px 2px 8px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .section-heading:hover { color: #fff; }
+  .section-heading:first-child { margin-top: 0; }
+  .section-caret {
+    font-size: 0.9rem;
+    color: var(--gold);
+    transition: transform 0.2s;
+  }
+
+  .section-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .level-btn {
+    background: linear-gradient(135deg, var(--wood-mid), var(--wood-dark));
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    padding: 14px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .level-btn:hover {
+    border-color: var(--gold-bright);
+    background: linear-gradient(135deg, var(--wood-light), var(--wood-mid));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(201,153,58,0.3);
+  }
+
+  .level-btn .level-shape {
+    display: block;
+    width: 46px;
+    height: 46px;
+    margin: 0 auto 8px;
+  }
+  .level-btn .level-shape svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 2;
+    stroke-linejoin: round;
+  }
+  .level-btn:hover .level-shape svg { stroke: var(--gold-bright); }
+
+  .level-btn .country-name {
+    font-family: 'Crimson Text', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--parchment);
+    display: block;
+  }
+
+  .level-btn.completed::after {
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    color: var(--gold-bright);
+    font-size: 1rem;
+    font-family: 'Cinzel', serif;
+  }
+
+  /* ── ATELIER NEON GRID (5×9) ── */
+  .neon-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+    margin-top: 12px;
+    padding: 12px;
+    background: #050a18;
+    border: 1px solid #15346e;
+    border-radius: 8px;
+  }
+  .neon-cell {
+    aspect-ratio: 1 / 1;
+    border-radius: 3px;
+    background: #0a1a3a;
+    border: 1.5px solid #2f7dff;
+    box-shadow: inset 0 0 8px rgba(47,125,255,0.45), 0 0 5px rgba(47,125,255,0.35);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    transition: box-shadow .15s, transform .1s;
+  }
+  .neon-cell:hover {
+    box-shadow: inset 0 0 12px rgba(80,160,255,0.7), 0 0 10px rgba(80,160,255,0.6);
+    transform: translateY(-1px);
+  }
+  .neon-cell.locked-empty {
+    opacity: 0.4;
+    cursor: default;
+    box-shadow: inset 0 0 6px rgba(47,125,255,0.2);
+  }
+  .neon-cell.locked-empty:hover { transform: none; box-shadow: inset 0 0 6px rgba(47,125,255,0.2); }
+  .neon-cell.solved {
+    background: #0d2350;
+    border-color: #6fd0ff;
+    box-shadow: inset 0 0 10px rgba(111,208,255,0.55), 0 0 9px rgba(111,208,255,0.55);
+  }
+  .neon-word {
+    color: #d8ecff;
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    line-height: 1.05;
+    text-align: center;
+    text-shadow: 0 0 6px rgba(120,190,255,0.9);
+    word-break: break-word;
+  }
+
+  /* Bonus Room 46 tile — centred above the 5×9 grid */
+  .room46-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 12px 0 -2px;
+  }
+  .room46-cell {
+    width: 19%;
+    aspect-ratio: 1 / 1;
+  }
+  .room46-cell.locked-empty { cursor: not-allowed; }
+  .room46-label { font-size: 0.5rem; }
+  .room46-lock { font-size: 1rem; opacity: 0.6; }
+
+  /* ── GAME SCREEN ── */
+  #game-screen { display: none; width: 100%; max-width: 420px; }
+
+  .game-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .back-btn {
+    background: none;
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .back-btn:hover { background: var(--gold); color: var(--ink); }
+
+  .level-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    color: var(--gold-bright);
+    text-align: center;
+    flex: 1;
+    padding: 0 8px;
+  }
+
+  .timer-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    color: var(--gold-bright);
+    background: var(--wood-dark);
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 5px 10px;
+    min-width: 70px;
+    text-align: center;
+  }
+
+  .timer-display.warning { color: #ff6040; border-color: #ff6040; animation: pulse-warn 0.5s infinite alternate; }
+  @keyframes pulse-warn { from { opacity: 1; } to { opacity: 0.6; } }
+
+  /* ── THE BOX ── */
+  .box-wrapper {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    margin: 18px auto 8px;
+    perspective: 1100px;
+    perspective-origin: 50% 0%;
+  }
+  /* Tilt the box back in 3D like the in-game view */
+  .box-wrapper > .box-inner {
+    transform: rotateX(22deg);
+    transform-origin: 50% 50%;
+  }
+
+  .box-inner {
+    position: absolute;
+    inset: 0;
+    background:
+      /* dark grime blotches */
+      radial-gradient(ellipse at 12% 88%, rgba(10,6,2,0.55) 0%, rgba(10,6,2,0) 35%),
+      radial-gradient(ellipse at 90% 15%, rgba(15,9,3,0.5) 0%, rgba(15,9,3,0) 30%),
+      radial-gradient(ellipse at 75% 92%, rgba(8,5,2,0.45) 0%, rgba(8,5,2,0) 28%),
+      /* wood grain */
+      repeating-linear-gradient(
+        92deg,
+        rgba(45,28,15,0.0) 0px,
+        rgba(45,28,15,0.0) 6px,
+        rgba(20,12,5,0.45) 7px,
+        rgba(20,12,5,0.0) 11px),
+      repeating-linear-gradient(
+        88deg,
+        rgba(90,60,30,0.1) 0px,
+        rgba(40,25,12,0.18) 3px,
+        rgba(60,38,18,0.08) 9px),
+      radial-gradient(ellipse at 30% 20%, #5e3f24 0%, #3a2616 45%, #1f1409 100%);
+    border-radius: 14px;
+    border: 4px solid #2e1d0e;
+    box-shadow:
+      inset 0 0 0 3px #1a1006,
+      inset 0 0 0 7px #6b5424,
+      inset 0 0 0 9px #8a6e30,
+      inset 0 3px 18px rgba(0,0,0,0.75),
+      inset 0 -3px 18px rgba(0,0,0,0.65),
+      0 10px 50px rgba(0,0,0,0.9),
+      0 2px 4px rgba(180,150,90,0.06);
+    padding: 17%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Grime & verdigris film over the whole lid */
+  .box-inner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    background-image:
+      radial-gradient(rgba(0,0,0,0.4) 0.5px, transparent 1px),
+      radial-gradient(rgba(50,60,40,0.25) 1px, transparent 2px),
+      radial-gradient(rgba(30,22,10,0.4) 0.5px, transparent 1px);
+    background-size: 9px 9px, 23px 23px, 5px 5px;
+    background-position: 0 0, 7px 11px, 2px 3px;
+    opacity: 0.55;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+  /* Tarnished, grimy inner well that holds the tiles */
+  .box-inner::before {
+    content: '';
+    position: absolute;
+    inset: 12%;
+    border-radius: 8px;
+    background:
+      radial-gradient(ellipse at 30% 25%, rgba(40,55,38,0.25) 0%, rgba(40,55,38,0) 40%),
+      radial-gradient(ellipse at 50% 40%, #1a1006 0%, #080502 100%);
+    box-shadow:
+      inset 0 4px 16px rgba(0,0,0,0.95),
+      inset 0 0 0 2px #463413,
+      inset 0 0 0 4px #1c1207,
+      inset 2px 2px 6px rgba(0,0,0,0.7);
+    pointer-events: none;
+  }
+
+  /* Corner symbols — tarnished brass studs */
+  .corner-symbol {
+    position: absolute;
+    width: 13%;
+    height: 13%;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #1a1006;
+    background:
+      radial-gradient(ellipse at 35% 30%, rgba(50,60,40,0.4) 0%, rgba(50,60,40,0) 50%),
+      radial-gradient(circle at 38% 32%, #4a3818, #221608 80%);
+    box-shadow:
+      inset 1px 1px 3px rgba(180,150,90,0.2),
+      inset -2px -2px 4px rgba(0,0,0,0.7),
+      0 2px 5px rgba(0,0,0,0.8);
+    transition: all 0.4s;
+    cursor: pointer;
+    overflow: hidden;
+    z-index: 2;
+  }
+  .corner-symbol svg {
+    width: 70%;
+    height: 70%;
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    transition: stroke 0.4s, filter 0.4s;
+  }
+  /* Unlit: tarnished brass, dull gold stroke */
+  .corner-symbol.unlit {
+    background:
+      radial-gradient(ellipse at 35% 30%, rgba(50,60,40,0.4) 0%, rgba(50,60,40,0) 50%),
+      radial-gradient(circle at 38% 32%, #4a3818, #221608 80%);
+    border-color: #1a1006;
+  }
+  .corner-symbol.unlit svg { stroke: #9c7d3a; filter: none; }
+
+  /* Lit: the SHAPE fills with target colour, stud stays dark */
+  .corner-symbol.lit {
+    border-color: #1a1006;
+  }
+  .corner-symbol.lit svg { stroke: none; }
+  .corner-symbol.lit svg path { stroke-width: 1; }
+
+  /* Colour-specific shape fill + glow when lit */
+  .corner-symbol.lit.black  svg path { fill: #2a2a2a; stroke: #888; filter: drop-shadow(0 0 5px #555); }
+  .corner-symbol.lit.red    svg path { fill: var(--col-red);    stroke: #ff7a5a; filter: drop-shadow(0 0 5px var(--col-red)); }
+  .corner-symbol.lit.yellow svg path { fill: var(--col-yellow); stroke: #fff39a; filter: drop-shadow(0 0 5px var(--col-yellow)); }
+  .corner-symbol.lit.purple svg path { fill: var(--col-purple); stroke: #c490e8; filter: drop-shadow(0 0 5px var(--col-purple)); }
+  .corner-symbol.lit.orange svg path { fill: var(--col-orange); stroke: #ffaa55; filter: drop-shadow(0 0 5px var(--col-orange)); }
+  .corner-symbol.lit.white  svg path { fill: var(--col-white);  stroke: #fff; filter: drop-shadow(0 0 5px #fff); }
+  .corner-symbol.lit.pink   svg path { fill: var(--col-pink);   stroke: #ffa0d0; filter: drop-shadow(0 0 5px var(--col-pink)); }
+  .corner-symbol.lit.blue   svg path { fill: var(--col-blue);   stroke: #6098e8; filter: drop-shadow(0 0 5px var(--col-blue)); }
+  .corner-symbol.lit.green  svg path { fill: var(--col-green);  stroke: #5cdc7a; filter: drop-shadow(0 0 5px var(--col-green)); }
+
+  /* ══ ATELIER: dark-blue box theme (overrides antique wood/brass) ══ */
+  .box-inner.atelier {
+    background:
+      radial-gradient(ellipse at 12% 88%, rgba(2,6,18,0.55) 0%, rgba(2,6,18,0) 35%),
+      radial-gradient(ellipse at 90% 15%, rgba(3,9,24,0.5) 0%, rgba(3,9,24,0) 30%),
+      radial-gradient(ellipse at 30% 20%, #1e3a78 0%, #122a5c 45%, #0a1838 100%);
+    border: 4px solid #0a1838;
+    box-shadow:
+      inset 0 0 0 3px #061026,
+      inset 0 0 0 7px #1c4a9c,
+      inset 0 0 0 9px #2f7dff,
+      inset 0 3px 18px rgba(0,0,0,0.7),
+      inset 0 -3px 18px rgba(0,0,0,0.6),
+      0 10px 50px rgba(0,0,0,0.9),
+      0 0 24px rgba(47,125,255,0.25);
+  }
+  .box-inner.atelier::after {
+    background-image:
+      radial-gradient(rgba(0,0,0,0.35) 0.5px, transparent 1px),
+      radial-gradient(rgba(40,80,140,0.22) 1px, transparent 2px),
+      radial-gradient(rgba(10,22,50,0.4) 0.5px, transparent 1px);
+    opacity: 0.5;
+  }
+  .box-inner.atelier::before {
+    background:
+      radial-gradient(ellipse at 30% 25%, rgba(40,90,160,0.25) 0%, rgba(40,90,160,0) 40%),
+      radial-gradient(ellipse at 50% 40%, #0a1838 0%, #04081c 100%);
+    box-shadow:
+      inset 0 4px 16px rgba(0,0,0,0.9),
+      inset 0 0 0 2px #1c4a9c,
+      inset 0 0 0 4px #08102a,
+      inset 2px 2px 6px rgba(0,0,0,0.6);
+  }
+  /* Atelier corner studs: dark navy with bright-blue rim */
+  .box-inner.atelier .corner-symbol,
+  .box-inner.atelier .corner-symbol.unlit {
+    border-color: #2f7dff;
+    background:
+      radial-gradient(ellipse at 35% 30%, rgba(40,90,160,0.4) 0%, rgba(40,90,160,0) 50%),
+      radial-gradient(circle at 38% 32%, #16386e, #0a1c3e 80%);
+    box-shadow:
+      inset 1px 1px 3px rgba(80,140,255,0.25),
+      inset -2px -2px 4px rgba(0,0,0,0.7),
+      0 2px 5px rgba(0,0,0,0.8),
+      0 0 6px rgba(47,125,255,0.4);
+  }
+  /* Unlit Atelier emblem: dull grey shape with faint blue rim (matches screenshots) */
+  .box-inner.atelier .corner-symbol.unlit svg { stroke: #7d8aa0; filter: none; }
+
+  .corner-tl { top: 2.5%; left: 2.5%; }
+  .corner-tr { top: 2.5%; right: 2.5%; }
+  .corner-bl { bottom: 2.5%; left: 2.5%; }
+  .corner-br { bottom: 2.5%; right: 2.5%; }
+
+  /* 3×3 tile grid */
+  .tile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 7%;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tile {
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.12s ease, filter 0.2s;
+    aspect-ratio: 1;
+    border-radius: 4px;
+    box-shadow:
+      inset 0 1px 1px rgba(255,255,255,0.12),
+      inset 0 -1px 2px rgba(0,0,0,0.4),
+      0 2px 4px rgba(0,0,0,0.6);
+    filter: saturate(1.05) brightness(0.96);
+  }
+  /* Grime & tarnish overlay — uneven dark patches, dust, worn edges */
+  .tile::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background:
+      radial-gradient(ellipse at 78% 82%, rgba(20,12,4,0.4) 0%, rgba(20,12,4,0) 45%),
+      radial-gradient(ellipse at 18% 24%, rgba(30,20,8,0.28) 0%, rgba(30,20,8,0) 40%),
+      radial-gradient(circle at 60% 30%, rgba(10,8,4,0.2) 0%, rgba(10,8,4,0) 25%),
+      linear-gradient(120deg, rgba(40,30,15,0.22) 0%, rgba(40,30,15,0) 30%, rgba(0,0,0,0) 70%, rgba(25,18,8,0.28) 100%);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+  /* Speckled dust / pitting */
+  .tile::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-image:
+      radial-gradient(rgba(0,0,0,0.4) 0.5px, transparent 1px),
+      radial-gradient(rgba(0,0,0,0.3) 0.5px, transparent 1px),
+      radial-gradient(rgba(60,45,25,0.3) 0.5px, transparent 1px);
+    background-size: 7px 7px, 11px 11px, 5px 5px;
+    background-position: 0 0, 3px 4px, 2px 1px;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+
+  .tile:hover { transform: scale(0.96); }
+  .tile:active { transform: scale(0.9); }
+
+  .tile.flash { animation: tile-flash 0.25s ease-out; }
+  @keyframes tile-flash {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.12); filter: saturate(1.05) brightness(1.4); }
+    100% { transform: scale(1); }
+  }
+
+  /* Color classes — vibrant gem tones, lightly aged */
+  .tile.gray   { background: #8e8a82; }
+  .tile.black  { background: #1c1a16; }
+  .tile.red    { background: #d62411; }
+  .tile.yellow { background: #f0c81e; }
+  .tile.purple { background: #8a28c8; }
+  .tile.orange { background: #ee7012; }
+  .tile.white  { background: #ece7db; }
+  .tile.pink   { background: #e85ca0; }
+  .tile.green  { background: #4cd840; }
+  .tile.blue   { background: #4a6db0; }
+
+  /* ── INFO PANEL ── */
+  .info-panel {
+    margin-top: 14px;
+    background: rgba(61,43,31,0.8);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .info-panel h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+
+  .info-panel p { color: var(--parchment-dark); font-style: italic; }
+
+  .move-count {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--gold);
+  }
+
+  /* ── BUTTONS ROW ── */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid var(--gold);
+    background: var(--wood-dark);
+    color: var(--gold-bright);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn:hover { background: var(--gold); color: var(--ink); }
+  .btn.primary { background: var(--gold); color: var(--ink); }
+  .btn.primary:hover { background: var(--gold-bright); }
+
+  /* ── ATELIER play: buttons match the timer chip ── */
+  body.atelier-active .back-btn,
+  body.atelier-active .btn {
+    background: #0a1f4a;
+    border-color: #6fa8ff;
+    color: #dceaff;
+  }
+  body.atelier-active .back-btn:hover,
+  body.atelier-active .btn:hover {
+    background: #12305f;
+    border-color: #6fa8ff;
+    color: #dceaff;
+  }
+  body.atelier-active .level-title { color: #dceaff; }
+  body.atelier-active .timer-display {
+    background: #0a1f4a;
+    border-color: #6fa8ff;
+    color: #dceaff;
+  }
+
+  /* ── OVERLAYS ── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,5,2,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .overlay.hidden { display: none; }
+
+  .overlay-box {
+    background: linear-gradient(145deg, var(--wood-mid), var(--wood-dark));
+    border: 3px solid var(--gold);
+    border-radius: 16px;
+    padding: 30px 24px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(201,153,58,0.3);
+  }
+
+  .overlay-box h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.6rem;
+    color: var(--gold-bright);
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px rgba(240,192,96,0.5);
+  }
+
+  .overlay-box p {
+    color: var(--parchment-dark);
+    font-size: 1.05rem;
+    font-style: italic;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .overlay-box .stat {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .stars {
+    font-size: 2rem;
+    margin: 10px 0;
+    letter-spacing: 4px;
+  }
+
+  /* ── ALLOWANCE TOKEN REWARD ── */
+  .token-reward { margin: 6px 0 12px; }
+  .token-coin {
+    width: 78px; height: 78px; margin: 0 auto 8px;
+    animation: token-pop 0.5s ease-out;
+    filter: drop-shadow(0 0 10px rgba(232,181,58,0.6));
+  }
+  .token-coin svg { width: 100%; height: 100%; }
+  @keyframes token-pop {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    60% { transform: scale(1.15) rotate(10deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  .token-caption {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--parchment); margin: 0 0 6px; line-height: 1.5;
+  }
+  .token-caption em { font-style: italic; }
+  .token-caption span {
+    display: block; font-size: 1.6rem; font-weight: 700; color: #e8b53a;
+    letter-spacing: 0.04em; line-height: 1.1; margin-top: 4px;
+  }
+  .token-sub {
+    font-size: 0.8rem; font-style: italic; color: #d8c89a; margin: 0; line-height: 1.4;
+  }
+  .token-sub em { font-style: italic; font-weight: 600; color: #e8b53a; }
+
+  /* ── SOLVE ANIMATION ── */
+  @keyframes corner-solve {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+  }
+  .corner-symbol.animating { animation: corner-solve 0.3s ease-out; }
+
+  /* ── HINT ── */
+  .hint-text {
+    font-size: 0.8rem;
+    color: var(--parchment-dark);
+    font-style: italic;
+    text-align: center;
+    margin-top: 8px;
+    min-height: 1.2em;
+    opacity: 0.8;
+  }
+
+  .tile-label {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="version-badge" id="version-badge">v1.0.0</div>
+<h1>Mora Jai Box</h1>
+<p class="subtitle" id="subtitle">Sanctum Collection — Eight Chambers</p>
+
+<!-- LEVEL SELECT -->
+<div id="level-select">
+  <div class="allowance-banner" id="allowance-banner">
+    <span class="allowance-coin" aria-hidden="true">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#e8b53a" stroke="#a87914" stroke-width="4"/><text x="50" y="70" text-anchor="middle" font-family="Cinzel, serif" font-size="58" font-weight="700" fill="#7a5410">A</text></svg>
+    </span>
+    <span class="allowance-label">Allowance</span>
+    <span class="allowance-value" id="allowance-value">0</span>
+  </div>
+  <div class="level-grid" id="level-grid"></div>
+  <div class="info-panel" style="margin-top:16px;">
+    <h3>HOW TO PLAY</h3>
+    <p>Press tiles to transform them. Get all four corners to match the target colour, then tap each corner symbol to unlock the box.</p>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen">
+  <div class="game-header">
+    <button class="back-btn" onclick="goBack()">← Menu</button>
+    <div class="level-title" id="level-title"></div>
+    <div class="timer-display" id="timer-display">0:00</div>
+  </div>
+
+  <div class="box-wrapper">
+    <div class="box-inner" id="box-inner">
+      <div class="corner-symbol corner-tl unlit" id="corner-tl"></div>
+      <div class="corner-symbol corner-tr unlit" id="corner-tr"></div>
+      <div class="corner-symbol corner-bl unlit" id="corner-bl"></div>
+      <div class="corner-symbol corner-br unlit" id="corner-br"></div>
+      <div class="tile-grid" id="tile-grid"></div>
+    </div>
+  </div>
+
+  <div class="hint-text" id="hint-text">Press a tile to transform the grid</div>
+
+  <div class="btn-row">
+    <button class="btn" onclick="resetLevel()">Reset</button>
+    <button class="btn" id="hint-btn" onclick="showHint()">Hint</button>
+  </div>
+</div>
+
+<!-- WIN OVERLAY -->
+<div class="overlay hidden" id="win-overlay">
+  <div class="overlay-box">
+    <h2>Unlocked!</h2>
+    <div class="token-reward">
+      <div class="token-coin">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="46" fill="#e8b53a" stroke="#a87914" stroke-width="3"/>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#c8902a" stroke-width="2"/>
+          <text x="50" y="68" text-anchor="middle" font-family="Cinzel, serif" font-size="54" font-weight="700" fill="#7a5410">A</text>
+        </svg>
+      </div>
+      <p class="token-caption">You have been<br><em>rewarded</em> an<br><span>Allowance<br>Token</span></p>
+      <p class="token-sub">Your <em>Allowance</em> has been<br>permanently raised by 1</p>
+    </div>
+    <div class="stars" id="win-stars">⭐⭐⭐</div>
+    <div class="stat" id="win-time"></div>
+    <div class="stat" id="win-moves"></div>
+    <p id="win-flavour"></p>
+    <div class="btn-row">
+      <button class="btn" onclick="closeWin(); resetLevel()">Play Again</button>
+      <button class="btn primary" onclick="closeWin(); goBack()">Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- TIME OVER OVERLAY -->
+<div class="overlay hidden" id="lose-overlay">
+  <div class="overlay-box">
+    <h2>Time Expired</h2>
+    <p>The box seals itself. Study the runes and try again.</p>
+    <div class="btn-row">
+      <button class="btn" onclick="closeLose(); resetLevel()">Try Again</button>
+      <button class="btn primary" onclick="closeLose(); goBack()">Menu</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// LEVEL DATA
+// ══════════════════════════════════════════════════════
+
+// Grid positions: indices 0-8 = TL,TM,TR, ML,C,MR, BL,BM,BR
+const POS = { 'Top Left':0,'Top Middle':1,'Top Right':2,'Middle Left':3,'Center':4,'Middle Right':5,'Bottom Left':6,'Bottom Middle':7,'Bottom Right':8 };
+const POS_NAMES = ['Top Left','Top Middle','Top Right','Middle Left','Center','Middle Right','Bottom Left','Bottom Middle','Bottom Right'];
+
+const LEVELS = [
+  {
+    id: 0, section: 'Sanctum', door: 1, country: 'Orinda Aries', target: 'black',
+    time: 120,
+    initial: ['green','black','green','black','black','black','green','yellow','green'],
+    solution: ['Bottom Middle','Middle Right','Middle Right','Bottom Left','Bottom Left','Middle Left','Bottom Right','Bottom Middle','Bottom Middle','Bottom Middle','Top Right','Bottom Middle','Top Middle'],
+    flavour: 'A coin rests within — your daily allowance increases.',
+    objective: 'Fill all four corners with black tiles to match the Orinda Aries emblems.'
+  },
+  {
+    id: 1, section: 'Sanctum', door: 2, country: 'Fenn Aries', target: 'red',
+    time: 150,
+    initial: ['gray','green','black','orange','red','orange','white','green','black'],
+    solution: ['Bottom Right','Top Middle','Top Middle','Bottom Left','Bottom Left','Middle Left','Top Right','Bottom Right','Middle Right','Bottom Middle','Bottom Middle','Bottom Right','Top Left','Bottom Left','Bottom Middle','Middle Left','Top Left','Middle Left','Center','Center'],
+    flavour: 'The crimson seal breaks. Fenn Aries remembers.',
+    objective: 'Fill all four corners with red tiles to match the Fenn Aries flag.'
+  },
+  {
+    id: 2, section: 'Sanctum', door: 3, country: 'Arch Aries', target: 'yellow',
+    time: 120,
+    initial: ['black','yellow','gray','yellow','green','yellow','gray','yellow','black'],
+    solution: ['Bottom Middle','Middle Right','Bottom Middle','Bottom Right','Top Middle','Top Left','Top Middle','Bottom Middle','Bottom Left','Top Right','Middle Left','Middle Left','Middle Right'],
+    flavour: 'Golden light spills across the collector\'s case.',
+    objective: 'Fill all four corners with yellow tiles to match the Arch Aries flag.'
+  },
+  {
+    id: 3, section: 'Sanctum', door: 4, country: 'Eraja', target: 'purple',
+    time: 180,
+    initial: ['yellow','purple','yellow','green','red','black','purple','purple','purple'],
+    solution: ['Middle Right','Top Middle','Top Middle','Middle Left','Top Middle','Top Middle','Bottom Middle','Top Right','Top Right','Top Left','Bottom Left','Top Middle','Top Left','Top Right','Top Left','Center','Middle Right','Center','Center','Middle Right','Bottom Left','Bottom Left'],
+    flavour: 'The violet glow reveals Eraja\'s ancient charter.',
+    objective: 'Fill all four corners with purple. Never press the red tile.'
+  },
+  {
+    id: 4, section: 'Sanctum', door: 5, country: 'Corarica', target: 'orange',
+    time: 150,
+    initial: ['orange','black','orange','orange','orange','orange','purple','green','purple'],
+    solution: ['Top Middle','Bottom Middle','Top Right','Top Right','Top Left','Bottom Left','Top Middle','Top Left','Top Right','Top Left','Top Left','Top Right','Bottom Right','Top Middle','Top Middle','Top Right','Top Left'],
+    flavour: 'The warm amber light of Corarica fills the chamber.',
+    objective: 'Fill all four corners with orange. Orange copies the most common adjacent colour.'
+  },
+  {
+    id: 5, section: 'Sanctum', door: 6, country: 'Mora Jai', target: 'white',
+    time: 90,
+    initial: ['yellow','yellow','yellow','white','pink','white','gray','gray','gray'],
+    solution: ['Middle Left','Bottom Left','Bottom Middle','Center','Center','Center','Center','Bottom Left','Bottom Right'],
+    flavour: 'The origin box opens. Mora Jai\'s secret is yours.',
+    objective: 'Fill all four corners with white. Spread white into gray tiles, then rotate with pink.'
+  },
+  {
+    id: 6, section: 'Sanctum', door: 7, country: 'Verra', target: 'pink',
+    time: 120,
+    initial: ['pink','pink','gray','gray','gray','gray','orange','orange','orange'],
+    solution: ['Top Left','Top Left','Middle Left','Top Left','Middle Left','Top Left','Middle Left','Middle Left','Center','Bottom Middle','Center','Top Middle','Top Middle','Middle Right'],
+    flavour: 'Rose-gold light cascades. Verra\'s seal is broken.',
+    objective: 'Spread pink to the orange tiles, then rotate pink squares into all four corners.'
+  },
+  {
+    id: 7, section: 'Sanctum', door: 8, country: 'Nuance', target: 'green',
+    time: 180,
+    initial: ['green','gray','green','gray','orange','orange','gray','black','purple'],
+    solution: ['Top Left','Middle Right','Bottom Middle','Bottom Right','Top Right','Top Right','Top Left','Top Right','Top Middle','Top Right','Center','Top Left','Top Middle','Top Left','Bottom Left','Bottom Right','Bottom Left','Bottom Middle','Middle Right','Middle Right','Top Left','Middle Left','Top Left'],
+    flavour: 'Emerald radiance. The eighth chamber yields its secret.',
+    objective: 'Fill all four corners with green. Turn orange tiles green by surrounding them with purple.'
+  },
+  // ── COURT SECTION — all target black, no solutions/hints ──
+  {
+    id: 8, section: 'Court', door: 1, country: 'Monk I', target: 'black',
+    time: 150,
+    initial: ['black','green','yellow','black','black','black','white','white','white'],
+    solution: null, flavour: 'The court door yields.', objective: ''
+  },
+  {
+    id: 9, section: 'Court', door: 2, country: 'Monk II', target: 'black',
+    time: 150,
+    initial: ['orange','orange','orange','black','green','black','pink','green','pink'],
+    solution: null, flavour: 'The court door yields.', objective: ''
+  },
+  {
+    id: 10, section: 'Court', door: 3, country: 'Monk III', target: 'black',
+    time: 150,
+    initial: ['black','pink','black','white','white','white','orange','green','orange'],
+    solution: null, flavour: 'The court door yields.', objective: ''
+  },
+  {
+    id: 11, section: 'Court', door: 4, country: 'Monk IV', target: 'black',
+    time: 150,
+    initial: ['orange','white','pink','black','white','black','green','white','orange'],
+    solution: null, flavour: 'The court door yields.', objective: ''
+  },
+  {
+    id: 12, section: 'Court', door: 5, country: 'Monk V', target: 'black',
+    time: 150,
+    initial: ['black','black','black','orange','white','orange','yellow','white','yellow'],
+    solution: null, flavour: 'The court door yields.', objective: ''
+  },
+  {
+    id: 13, section: 'Court', door: 6, country: 'Monk VI', target: 'black',
+    time: 150,
+    initial: ['black','black','black','white','white','white','pink','purple','orange'],
+    solution: null, flavour: 'The court door yields.', objective: ''
+  },
+  {
+    id: 14, section: 'Court', door: 7, country: 'Monk VII', target: 'black',
+    time: 150,
+    initial: ['orange','white','pink','orange','white','pink','black','black','black'],
+    solution: null, flavour: 'The court door yields.', objective: ''
+  },
+  {
+    id: 15, section: 'Court', door: 8, country: 'Monk VIII', target: 'black',
+    time: 150,
+    initial: ['black','black','black','green','black','white','white','white','pink'],
+    solution: null, flavour: 'The court door yields.', objective: ''
+  },
+  // ══ THRONE ══
+  {
+    id: 62, section: 'Throne', door: 1, country: 'Throne Room', target: 'blue',
+    time: 150,
+    initial: ['black','green','blue','blue','blue','blue','purple','gray','gray'],
+    solution: null, flavour: 'The throne is claimed.', objective: ''
+  },
+  // ══ MASTER ══
+  {
+    id: 63, section: 'Master', door: 1, country: 'Master Bedroom', target: 'white',
+    time: 150,
+    initial: ['white','gray','white','white','gray','gray','gray','gray','white'],
+    solution: null, flavour: 'The master chamber opens.', objective: ''
+  },
+  // ══ UNDERPASS ══
+  {
+    id: 64, section: 'Underpass', door: 1, country: 'The Underpass', target: 'black',
+    time: 150,
+    initial: ['black','black','black','gray','black','gray','yellow','gray','yellow'],
+    solution: null, flavour: 'The underpass clears.', objective: ''
+  },
+  // ══ ATELIER — 45 Mora Jai puzzles, 5×9 grid. Solving reveals a poem word. ══
+  // initial: null = grid not yet supplied. target read from each screenshot's corner emblem.
+  { id:16, section:'Atelier', pos:1,  room:'Archives',         word:'Through',  target:'orange', time:150, initial:['red','gray','black','orange','orange','orange','green','gray','purple'], solution:null, flavour:'', objective:'' },
+  { id:17, section:'Atelier', pos:2,  room:'Chapel',           word:'lantern',  target:'orange', time:150, initial:['blue','orange','blue','black','black','orange','blue','orange','blue'], solution:null, flavour:'', objective:'' },
+  { id:18, section:'Atelier', pos:3,  room:'Vestibule',        word:'light',    target:'orange', time:150, initial:['gray','green','gray','orange','black','red','black','white','purple'], solution:null, flavour:'', objective:'' },
+  { id:19, section:'Atelier', pos:4,  room:'Coat Check',       word:'in',       target:'blue', time:150, initial:['yellow','green','yellow','black','black','black','blue','green','blue'], solution:null, flavour:'', objective:'' },
+  { id:20, section:'Atelier', pos:5,  room:'Aquarium',         word:'sketches', target:'yellow', time:150, initial:['pink','gray','yellow','red','yellow','white','orange','blue','black'], solution:null, flavour:'', objective:'' },
+  { id:21, section:'Atelier', pos:6,  room:'Foyer',            word:'cast,',    target:'black', time:150, initial:['green','green','green','gray','orange','orange','blue','gray','purple'], solution:null, flavour:'', objective:'' },
+  { id:22, section:'Atelier', pos:7,  room:'The Pool',         word:'A',        target:'red', time:150, initial:['red','white','yellow','blue','green','blue','blue','yellow','blue'], solution:null, flavour:'', objective:'' },
+  { id:23, section:'Atelier', pos:8,  room:'Servant Quarters', word:'tint',     target:'white', time:150, initial:['gray','gray','gray','black','red','black','white','gray','yellow'], solution:null, flavour:'', objective:'' },
+  { id:24, section:'Atelier', pos:9,  room:'Pump Room',        word:'of',       target:'purple', time:150, initial:['purple','blue','purple','green','orange','black','black','green','orange'], solution:null, flavour:'', objective:'' },
+  { id:25, section:'Atelier', pos:10, room:'The Furnace',      word:'truth',    target:'blue', time:150, initial:['black','gray','gray','white','green','white','blue','yellow','orange'], solution:null, flavour:'', objective:'' },
+  { id:26, section:'Atelier', pos:11, room:'Gym',              word:'to',       target:'red', time:150, initial:['pink','white','pink','black','red','black','gray','gray','gray'], solution:null, flavour:'', objective:'' },
+  { id:27, section:'Atelier', pos:12, room:'Laundry Room',     word:'find',     target:'purple', time:150, initial:['pink','orange','purple','orange','gray','gray','pink','blue','purple'], solution:null, flavour:'', objective:'' },
+  { id:28, section:'Atelier', pos:13, room:'Guest Bedroom',    word:'our',      target:'yellow', time:150, initial:['yellow','yellow','yellow','black','black','black','gray','green','gray'], solution:null, flavour:'', objective:'' },
+  { id:29, section:'Atelier', pos:14, room:'Conference Room',  word:'path.',    target:'yellow', time:150, initial:['yellow','yellow','yellow','black','gray','black','orange','green','orange'], solution:null, flavour:'', objective:'' },
+  { id:30, section:'Atelier', pos:15, room:'Den',              word:'A',        target:'purple', time:150, initial:['gray','pink','gray','orange','green','orange','purple','gray','purple'], solution:null, flavour:'', objective:'' },
+  { id:31, section:'Atelier', pos:16, room:'West Wing Hall',   word:'hue',      target:'purple', time:150, initial:['red','green','orange','black','black','black','purple','blue','purple'], solution:null, flavour:'', objective:'' },
+  { id:32, section:'Atelier', pos:17, room:'Passageway',       word:'of',       target:'orange', time:150, initial:['orange','green','orange','yellow','orange','orange','blue','yellow','orange'], solution:null, flavour:'', objective:'' },
+  { id:33, section:'Atelier', pos:18, room:'Dark Room',        word:'wisdom',   target:'blue', time:150, initial:['green','yellow','green','blue','orange','blue','blue','orange','blue'], solution:null, flavour:'', objective:'' },
+  { id:34, section:'Atelier', pos:19, room:'Closet',           word:'to',       target:'blue', time:150, initial:['pink','blue','blue','blue','blue','purple','green','gray','pink'], solution:null, flavour:'', objective:'' },
+  { id:35, section:'Atelier', pos:20, room:'Parlor Room',      word:'turn',     target:'yellow', time:150, initial:['orange','yellow','orange','green','yellow','green','black','yellow','black'], solution:null, flavour:'', objective:'' },
+  { id:36, section:'Atelier', pos:21, room:'Billiards Room',   word:'us',       target:'red', time:150, initial:['pink','gray','pink','blue','gray','blue','pink','red','pink'], solution:null, flavour:'', objective:'' },
+  { id:37, section:'Atelier', pos:22, room:'Trophy Room',      word:'right.',   target:'white', time:150, initial:['gray','red','gray','gray','pink','gray','black','red','white'], solution:null, flavour:'', objective:'' },
+  { id:38, section:'Atelier', pos:23, room:'The Foundation',   word:'A',        target:'orange', time:150, initial:['gray','orange','orange','yellow','orange','black','blue','blue','orange'], solution:null, flavour:'', objective:'' },
+  { id:39, section:'Atelier', pos:24, room:'Ballroom',         word:'shade',    target:'blue', time:150, initial:['green','white','white','black','white','black','blue','white','blue'], solution:null, flavour:'', objective:'' },
+  { id:40, section:'Atelier', pos:25, room:'Spare Room',       word:'of',       target:'blue', time:150, initial:['black','blue','gray','blue','orange','blue','black','orange','yellow'], solution:null, flavour:'', objective:'' },
+  { id:41, section:'Atelier', pos:26, room:'Nook',             word:'rain',     target:'purple', time:150, initial:['black','green','black','gray','orange','gray','purple','purple','purple'], solution:null, flavour:'', objective:'' },
+  { id:42, section:'Atelier', pos:27, room:'Kitchen',          word:'to',       target:'purple', time:150, initial:['pink','white','pink','orange','red','orange','purple','white','purple'], solution:null, flavour:'', objective:'' },
+  { id:43, section:'Atelier', pos:28, room:'Corridor',         word:'pass',     target:'orange', time:150, initial:['orange','yellow','orange','orange','pink','yellow','pink','orange','pink'], solution:null, flavour:'', objective:'' },
+  { id:44, section:'Atelier', pos:29, room:'Music Room',       word:'the',      target:'orange', time:150, initial:['pink','orange','pink','orange','orange','orange','green','orange','green'], solution:null, flavour:'', objective:'' },
+  { id:45, section:'Atelier', pos:30, room:'Lavatory',         word:'light.',   target:'black', time:150, initial:['black','blue','black','black','green','orange','blue','green','blue'], solution:null, flavour:'', objective:'' },
+  { id:46, section:'Atelier', pos:31, room:'Solarium',         word:'Through',  target:'purple', time:150, initial:['black','green','black','orange','purple','orange','blue','green','blue'], solution:null, flavour:'', objective:'' },
+  { id:47, section:'Atelier', pos:32, room:'Hallway',          word:'lantern',  target:'blue',    time:150, initial:['white','white','white','yellow','white','black','blue','blue','blue'], solution:null, flavour:'', objective:'' },
+  { id:48, section:'Atelier', pos:33, room:'Dining Room',      word:'light',    target:'orange',  time:150, initial:['pink','orange','pink','orange','blue','orange','pink','orange','pink'], solution:null, flavour:'', objective:'' },
+  { id:49, section:'Atelier', pos:34, room:'Observatory',      word:'in',       target:'blue',    time:150, initial:['green','blue','gray','black','blue','gray','purple','blue','blue'], solution:null, flavour:'', objective:'' },
+  { id:50, section:'Atelier', pos:35, room:'East Wing Hall',   word:'shadows',  target:'blue',    time:150, initial:['purple','white','purple','white','white','white','blue','pink','blue'], solution:null, flavour:'', objective:'' },
+  { id:51, section:'Atelier', pos:36, room:'Bedroom',          word:'past,',    target:'black',   time:150, initial:['orange','yellow','orange','green','gray','green','blue','green','blue'], solution:null, flavour:'', objective:'' },
+  { id:52, section:'Atelier', pos:37, room:'Drawing Room',     word:'we',       target:'purple',  time:150, initial:['purple','purple','purple','black','gray','gray','orange','blue','orange'], solution:null, flavour:'', objective:'' },
+  { id:53, section:'Atelier', pos:38, room:'Gallery',          word:'seek',     target:'blue',    time:150, initial:['gray','black','gray','yellow','blue','yellow','blue','blue','blue'], solution:null, flavour:'', objective:'' },
+  { id:54, section:'Atelier', pos:39, room:'Library',          word:"what's",   target:'blue',    time:150, initial:['pink','orange','orange','blue','blue','pink','orange','orange','pink'], solution:null, flavour:'', objective:'' },
+  { id:55, section:'Atelier', pos:40, room:'Cloister',         word:'left',     target:'red',     time:150, initial:['pink','black','pink','orange','gray','orange','pink','red','pink'], solution:null, flavour:'', objective:'' },
+  { id:56, section:'Atelier', pos:41, room:'Conservatory',     word:'of',       target:'black',   time:150, initial:['black','gray','orange','orange','green','orange','orange','green','yellow'], solution:null, flavour:'', objective:'' },
+  { id:57, section:'Atelier', pos:42, room:"Maid's Chamber",   word:'the',      target:'purple',  time:150, initial:['pink','pink','pink','orange','orange','orange','purple','purple','purple'], solution:null, flavour:'', objective:'' },
+  { id:58, section:'Atelier', pos:43, room:'Entrance Hall',    word:'lies',     target:'yellow',  time:150, initial:['yellow','yellow','yellow','black','yellow','green','gray','blue','gray'], solution:null, flavour:'', objective:'' },
+  { id:59, section:'Atelier', pos:44, room:'Pantry',           word:'we',       target:'blue',    time:150, initial:['blue','purple','blue','black','blue','purple','blue','purple','purple'], solution:null, flavour:'', objective:'' },
+  { id:60, section:'Atelier', pos:45, room:'Storeroom',        word:'cast.',    target:'red',     time:150, initial:['black','black','black','gray','orange','gray','pink','red','pink'], solution:null, flavour:'', objective:'' },
+  // Bonus finale — unlocked only after all 45 Atelier boxes are solved. Solution: BLUE.
+  { id:61, section:'Atelier', pos:46, room:'Room 46', bonus:true, word:'', target:'blue', time:999, initial:['orange','pink','orange','gray','green','gray','blue','gray','blue'], solution:null, flavour:'The forty-sixth door.', objective:'' }
+];
+
+// ══════════════════════════════════════════════════════
+// COUNTRY SVG SHAPES (traced from in-game symbols)
+// Orinda Aries: tall shield/cartouche with notched top & bottom
+// Fenn Aries:   pentagon
+// Arch Aries:   mountain (triangle with notched base)
+// Eraja:        hourglass / bow-tie
+// Corarica:     downward chevron / heart-notch
+// Mora Jai:     dome / bridge arch
+// Verra:        abstract broken-heart shield
+// Nuance:       diamond / rhombus
+// ══════════════════════════════════════════════════════
+const COUNTRY_SVG = {
+  // Orinda Aries: tall rectangle with a flat-topped (chopped) triangle at top and bottom
+  'Orinda Aries': `<svg viewBox="0 0 32 32"><path d="M14 3 L18 3 L21 9 L23 9 L23 23 L21 23 L18 29 L14 29 L11 23 L9 23 L9 9 L11 9 Z"/></svg>`,
+  'Fenn Aries':   `<svg viewBox="0 0 32 32"><path d="M16 3 L28 11 L23 27 L9 27 L4 11 Z"/></svg>`,
+  'Arch Aries':   `<svg viewBox="0 0 32 32"><path d="M4 27 L11 9 L16.5 19 L22 5 L29 27 Z"/></svg>`,
+  'Eraja':        `<svg viewBox="0 0 32 32"><path d="M6 4 L26 4 L18 16 L26 28 L6 28 L14 16 Z"/></svg>`,
+  'Corarica':     `<svg viewBox="0 0 32 32"><path d="M4.7 16 L10.3 10.3 L16 16 L21.7 10.3 L27.3 16 L16 27.3 Z"/></svg>`,
+  // Mora Jai: ~170° solid dome, rounded top, flat bottom with a small centre notch
+  'Mora Jai':     `<svg viewBox="0 0 32 32"><path d="M3.05 21.93 A13 13 0 1 1 28.95 21.93 L18 21.93 L18 19.13 L14 19.13 L14 21.93 Z"/></svg>`,
+  // Verra: 2:1 rectangle tilted 45° with a semicircle (diameter = short side) on one long side
+  'Verra':        `<svg viewBox="0 0 32 32"><path d="M12.11 4.33 L27.67 19.89 L19.89 27.67 L16 23.78 A5.5 5.5 0 0 1 8.22 16 L4.33 12.11 Z"/></svg>`,
+  'Nuance':       `<svg viewBox="0 0 32 32"><path d="M16 2 L25 16 L16 30 L7 16 Z"/></svg>`,
+  // Blue: spiky crown on top, necking cleanly into a long dagger-like tail
+  'BlueStar':     `<svg viewBox="0 0 32 32"><path d="M16 1 L18.8 5.5 L23.2 3.8 L22.4 8.4 L27.4 7.8 L24 11.2 L28.2 13.6 L23.8 15 L26 18 L21.2 16.8 L22 20 L18.4 17.6 L18.8 21.6 L16.6 19.6 L17.4 24 L18.6 24.8 L17 25.4 L16.4 31.5 L15.6 25.4 L14 24.8 L15.2 24 L13.2 21.6 L13.6 17.6 L10 20 L10.8 16.8 L6 18 L8.2 15 L3.8 13.6 L8 11.2 L4.6 7.8 L9.6 8.4 L8.8 3.8 L13.2 5.5 Z"/></svg>`,
+};
+
+// Map a target colour to its emblem shape (used by Atelier; Sanctum uses country names)
+const TARGET_SHAPE = {
+  black:   'Orinda Aries',
+  red:     'Fenn Aries',
+  yellow:  'Arch Aries',
+  purple:  'Eraja',
+  orange:  'Corarica',
+  white:   'Mora Jai',
+  pink:    'Verra',
+  green:   'Nuance',
+  blue:    'BlueStar',
+};
+
+const TARGET_COLORS = { black:'#1a1a1a', red:'#cc2200', yellow:'#e8c020', purple:'#7020b0', orange:'#e06010', white:'#f0eeee', pink:'#e060a0', green:'#20a040', blue:'#2060c0' };
+
+function getCountrySVG(level) {
+  // Atelier (and any non-country) puzzles: pick emblem by target colour
+  if (level && level.section === 'Atelier' && TARGET_SHAPE[level.target]) {
+    return COUNTRY_SVG[TARGET_SHAPE[level.target]];
+  }
+  // All black-target boxes use the Orinda Aries cartouche emblem
+  if (level && level.target === 'black') return COUNTRY_SVG['Orinda Aries'];
+  const country = typeof level === 'string' ? level : (level && level.country);
+  if (COUNTRY_SVG[country]) return COUNTRY_SVG[country];
+  // Fallback by target colour
+  if (level && TARGET_SHAPE[level.target]) return COUNTRY_SVG[TARGET_SHAPE[level.target]];
+  return `<svg viewBox="0 0 32 32"><path d="M16 4 L28 28 L4 28 Z"/></svg>`;
+}
+
+// Menu emblem helper (kept for clarity; emblems are centred in their viewBox).
+function getMenuSVG(level) {
+  return getCountrySVG(level);
+}
+
+
+
+// ══════════════════════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════════════════════
+let currentLevel = null;
+let grid = []; // array of 9 color strings
+let timerInterval = null;
+let elapsed = 0;
+let moves = 0;
+let hintIndex = 0;
+let completedLevels = JSON.parse(localStorage.getItem('mj-completed') || '{}');
+let cornersLit = [false,false,false,false]; // TL,TR,BL,BR
+
+// ══════════════════════════════════════════════════════
+// AUDIO & HAPTICS
+// ══════════════════════════════════════════════════════
+let audioCtx = null;
+
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTileClick() {
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.12);
+  } catch(e) {}
+  // Haptic
+  if (navigator.vibrate) navigator.vibrate(12);
+}
+
+function playCornerLit() {
+  try {
+    const ctx = getAudio();
+    [0, 0.06, 0.12].forEach((t, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime([660, 880, 1100][i], ctx.currentTime + t);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.15);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.15);
+    });
+  } catch(e) {}
+  if (navigator.vibrate) navigator.vibrate([20, 30, 40]);
+}
+
+function playReset() {
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(280, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.35);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.35);
+  } catch(e) {}
+  if (navigator.vibrate) navigator.vibrate([40, 20, 40, 20, 80]);
+}
+
+function playWin() {
+  try {
+    const ctx = getAudio();
+    [0, 0.1, 0.2, 0.35].forEach((t, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime([523, 659, 784, 1047][i], ctx.currentTime + t);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.2);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.2);
+    });
+  } catch(e) {}
+  if (navigator.vibrate) navigator.vibrate([30, 20, 30, 20, 30, 20, 100]);
+}
+
+
+let expandedSection = 'Sanctum'; // which section is open on the select screen
+
+function updateAllowance() {
+  // Allowance = number of distinct solved levels (+1 each), persisted via completedLevels
+  const score = Object.values(completedLevels).filter(Boolean).length;
+  const el = document.getElementById('allowance-value');
+  if (el) el.textContent = score;
+}
+
+function init() {
+  updateAllowance();
+  const container = document.getElementById('level-grid');
+  container.innerHTML = '';
+  const sections = ['Sanctum', 'Court', 'Throne', 'Master', 'Underpass', 'Atelier'];
+  sections.forEach(section => {
+    const isOpen = expandedSection === section;
+
+    const heading = document.createElement('button');
+    heading.className = 'section-heading' + (isOpen ? ' open' : '');
+    heading.innerHTML = `<span class="section-caret">${isOpen ? '▾' : '▸'}</span> ${section}`;
+    heading.onclick = () => {
+      expandedSection = isOpen ? null : section;
+      init();
+    };
+    container.appendChild(heading);
+
+    if (!isOpen) return;
+
+    if (section === 'Atelier') {
+      const atelierLevels = LEVELS.filter(lv => lv.section === 'Atelier' && !lv.bonus);
+      const bonus = LEVELS.find(lv => lv.section === 'Atelier' && lv.bonus);
+      const all45Done = atelierLevels.every(lv => completedLevels[lv.id]);
+
+      // Bonus "Room 46" tile, centred above the grid — locked until all 45 solved
+      if (bonus) {
+        const wrap = document.createElement('div');
+        wrap.className = 'room46-wrap';
+        const cell = document.createElement('button');
+        const solved = !!completedLevels[bonus.id];
+        const unlocked = all45Done;
+        cell.className = 'neon-cell room46-cell' + (solved ? ' solved' : '') + (unlocked ? '' : ' locked-empty');
+        cell.innerHTML = unlocked
+          ? (solved ? '<span class="neon-word">46</span>' : '<span class="neon-word room46-label">Room 46</span>')
+          : '<span class="room46-lock">🔒</span>';
+        cell.onclick = () => { if (unlocked) startLevel(bonus.id); };
+        wrap.appendChild(cell);
+        container.appendChild(wrap);
+      }
+
+      // 5×9 neon grid, ordered by pos, empty until solved (reveals word)
+      const neon = document.createElement('div');
+      neon.className = 'neon-grid';
+      atelierLevels
+            .sort((a,b) => a.pos - b.pos)
+            .forEach(lv => {
+        const cell = document.createElement('button');
+        const solved = !!completedLevels[lv.id];
+        const playable = !!lv.initial;
+        cell.className = 'neon-cell' + (solved ? ' solved' : '') + (playable ? '' : ' locked-empty');
+        cell.innerHTML = solved ? `<span class="neon-word">${lv.word}</span>` : '';
+        cell.onclick = () => { if (playable) startLevel(lv.id); };
+        neon.appendChild(cell);
+      });
+      container.appendChild(neon);
+      return;
+    }
+
+    const sectionGrid = document.createElement('div');
+    sectionGrid.className = 'section-grid';
+
+    LEVELS.filter(lv => lv.section === section).forEach(lv => {
+      const btn = document.createElement('button');
+      btn.className = 'level-btn' + (completedLevels[lv.id] ? ' completed' : '');
+      // Show the corner emblem shape (gold outline) — no colour hint
+      const shapeSvg = getMenuSVG(lv);
+      btn.innerHTML = `
+        <span class="level-shape">${shapeSvg}</span>
+        <span class="country-name">${lv.country}</span>
+      `;
+      btn.onclick = () => startLevel(lv.id);
+      sectionGrid.appendChild(btn);
+    });
+    container.appendChild(sectionGrid);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// LEVEL START / BACK
+// ══════════════════════════════════════════════════════
+function startLevel(id) {
+  currentLevel = LEVELS.find(lv => lv.id === id);
+  document.getElementById('level-select').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
+  document.getElementById('level-title').textContent = currentLevel.country || currentLevel.room || '';
+  document.getElementById('box-inner').classList.toggle('atelier', currentLevel.section === 'Atelier');
+  document.body.classList.toggle('atelier-active', currentLevel.section === 'Atelier');
+  const subtitles = {
+    Sanctum: 'Sanctum Collection — Eight Chambers',
+    Court:   'Court Collection — Eight Trials',
+    Throne:  'Throne Collection — The Final Seat',
+    Master:  'Master Collection — The Inner Chamber',
+    Underpass: 'Underpass Collection — The Underground',
+    Atelier: 'Atelier Collection — Forty-Five Boxes'
+  };
+  document.getElementById('subtitle').textContent = subtitles[currentLevel.section] || subtitles.Sanctum;
+  // Hide hint button when there's no solution (Court puzzles)
+  document.getElementById('hint-btn').style.display = currentLevel.solution ? '' : 'none';
+  stopTimer();
+  grid = [...currentLevel.initial];
+  moves = 0;
+  hintIndex = 0;
+  cornersLit = [false,false,false,false];
+  elapsed = 0;
+  document.getElementById('hint-text').textContent = 'Press a tile to transform the grid';
+  renderGrid();
+  renderCorners();
+  startTimer();
+}
+
+function goBack() {
+  stopTimer();
+  if (currentLevel) expandedSection = currentLevel.section;
+  document.body.classList.remove('atelier-active');
+  document.getElementById('subtitle').textContent = 'Sanctum Collection — Eight Chambers';
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('level-select').style.display = 'block';
+  init(); // re-render to refresh completed markers
+}
+
+// ══════════════════════════════════════════════════════
+// RESET
+// ══════════════════════════════════════════════════════
+function resetLevel() {
+  stopTimer();
+  playReset();
+  grid = [...currentLevel.initial];
+  moves = 0;
+  hintIndex = 0;
+  cornersLit = [false,false,false,false];
+  elapsed = 0;
+  document.getElementById('hint-text').textContent = 'Press a tile to transform the grid';
+  renderGrid();
+  renderCorners();
+  startTimer();
+}
+function startTimer() {
+  const display = document.getElementById('timer-display');
+  display.classList.remove('warning');
+  timerInterval = setInterval(() => {
+    elapsed++;
+    const remaining = currentLevel.time - elapsed;
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    display.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (remaining <= 15) display.classList.add('warning');
+    else display.classList.remove('warning');
+    if (remaining <= 0) {
+      stopTimer();
+      display.textContent = '0:00';
+      document.getElementById('lose-overlay').classList.remove('hidden');
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════
+function renderGrid() {
+  const container = document.getElementById('tile-grid');
+  container.innerHTML = '';
+  grid.forEach((color, idx) => {
+    const tile = document.createElement('div');
+    tile.className = `tile ${color}`;
+    tile.dataset.idx = idx;
+    tile.onclick = () => pressTile(idx);
+    container.appendChild(tile);
+  });
+}
+
+function renderCorners(flash=[]) {
+  const ids = ['corner-tl','corner-tr','corner-bl','corner-br'];
+  const baseSvg = getCountrySVG(currentLevel);
+  // Aim each shape's bottom toward the box centre along the diagonal:
+  // TL→down-right, TR→down-left, BL→up-right, BR→up-left
+  const cornerAngle = [135, 225, 45, 315];
+  ids.forEach((id, i) => {
+    const el = document.getElementById(id);
+    // Wrap the shape's inner content in a rotation group
+    const angle = cornerAngle[i];
+    const inner = baseSvg.replace(/<svg[^>]*>/, '').replace('</svg>', '')
+      // strip any existing rotate group the source shape may have
+      .replace(/<g transform="rotate\([^)]*\)">/, '').replace(/<\/g>\s*$/, '');
+    const svg = `<svg viewBox="0 0 32 32"><g transform="rotate(${angle} 16 16)">${inner}</g></svg>`;
+    el.innerHTML = svg;
+    // Position classes
+    const posClass = id.replace('corner-','corner-');
+    el.className = `corner-symbol ${posClass} unlit`;
+    if (cornersLit[i]) {
+      el.classList.remove('unlit');
+      el.classList.add('lit', currentLevel.target);
+    }
+    if (flash.includes(i)) {
+      el.classList.add('animating');
+      setTimeout(() => el.classList.remove('animating'), 400);
+    }
+    // Attach click
+    el.onclick = () => tapCorner(i);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// TILE MECHANICS
+// ══════════════════════════════════════════════════════
+function pressTile(idx) {
+  const color = grid[idx];
+  let flashed = true;
+
+  switch(color) {
+    case 'green':  applyGreen(idx); break;
+    case 'yellow': applyYellow(idx); break;
+    case 'purple': applyPurple(idx); break;
+    case 'red':    applyRed(idx); break;
+    case 'pink':   applyPink(idx); break;
+    case 'black':  applyBlack(idx); break;
+    case 'orange': applyOrange(idx); break;
+    case 'white':  applyWhite(idx); break;
+    case 'blue':   applyBlue(idx); break;
+    case 'gray':   flashed = false; break;
+  }
+
+  if (flashed) {
+    playTileClick();
+    moves++;
+    // Flash the tile
+    const tiles = document.querySelectorAll('.tile');
+    tiles[idx].classList.add('flash');
+    setTimeout(() => tiles[idx].classList.remove('flash'), 300);
+    renderGrid();
+    renderCorners();
+    checkAllCorners();
+  }
+}
+
+// Mirror index: opposite in 3×3 grid
+function mirror(idx) {
+  return 8 - idx;
+}
+
+// Row mates (same row, excluding self)
+function rowMates(idx) {
+  const row = Math.floor(idx / 3);
+  return [row*3, row*3+1, row*3+2].filter(i => i !== idx);
+}
+
+// Adjacent (orthogonal + diagonal)
+function adjacent(idx) {
+  const r = Math.floor(idx/3), c = idx%3;
+  const res = [];
+  for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++) {
+    if (dr===0 && dc===0) continue;
+    const nr=r+dr, nc=c+dc;
+    if (nr>=0&&nr<3&&nc>=0&&nc<3) res.push(nr*3+nc);
+  }
+  return res;
+}
+
+// Ring around tile (clockwise order)
+function ring(idx) {
+  const r = Math.floor(idx/3), c = idx%3;
+  // Clockwise: TL,T,TR,R,BR,B,BL,L
+  const dirs = [[-1,-1],[-1,0],[-1,1],[0,1],[1,1],[1,0],[1,-1],[0,-1]];
+  return dirs.map(([dr,dc])=>{
+    const nr=r+dr, nc=c+dc;
+    if(nr>=0&&nr<3&&nc>=0&&nc<3) return nr*3+nc;
+    return null;
+  }).filter(i=>i!==null);
+}
+
+function applyGreen(idx) {
+  const m = mirror(idx);
+  const tmp = grid[idx];
+  grid[idx] = grid[m];
+  grid[m] = tmp;
+}
+
+function applyYellow(idx) {
+  // Move up one tile
+  const r = Math.floor(idx/3), c = idx%3;
+  if (r > 0) {
+    const above = (r-1)*3+c;
+    const tmp = grid[idx]; grid[idx]=grid[above]; grid[above]=tmp;
+  }
+}
+
+function applyPurple(idx) {
+  // Move down one tile
+  const r = Math.floor(idx/3), c = idx%3;
+  if (r < 2) {
+    const below = (r+1)*3+c;
+    const tmp = grid[idx]; grid[idx]=grid[below]; grid[below]=tmp;
+  }
+}
+
+function applyRed(idx) {
+  // All white → black, all black → red
+  for (let i=0; i<9; i++) {
+    if (grid[i]==='white') grid[i]='black';
+    else if (grid[i]==='black') grid[i]='red';
+  }
+}
+
+function applyPink(idx) {
+  // Rotate all tiles in ring around idx clockwise
+  const r = ring(idx);
+  if (r.length === 0) return;
+  const vals = r.map(i => grid[i]);
+  // Clockwise: last -> first
+  const rotated = [vals[vals.length-1], ...vals.slice(0,-1)];
+  r.forEach((i, j) => grid[i] = rotated[j]);
+}
+
+function applyBlack(idx) {
+  // Move all other tiles in same row one to the right (wraps)
+  const row = Math.floor(idx/3);
+  const base = row*3;
+  const cols = [0,1,2];
+  const others = cols.filter(c => base+c !== idx);
+  // collect their values
+  const vals = [grid[base], grid[base+1], grid[base+2]];
+  // shift right by 1 (wrapping), but only the non-self tiles
+  // "move all other tiles in the row one to the right"
+  // Simpler: rotate the entire row right by 1
+  const newRow = [vals[2], vals[0], vals[1]];
+  grid[base] = newRow[0]; grid[base+1] = newRow[1]; grid[base+2] = newRow[2];
+}
+
+function applyOrange(idx) {
+  // Change to most common color in adjacent tiles
+  const adj = adjacent(idx);
+  const counts = {};
+  adj.forEach(i => { counts[grid[i]] = (counts[grid[i]]||0)+1; });
+  let best = null, bestCount = 0;
+  for (const [col, cnt] of Object.entries(counts)) {
+    if (cnt > bestCount) { bestCount = cnt; best = col; }
+  }
+  if (best) grid[idx] = best;
+}
+
+function applyWhite(idx) {
+  const adj = adjacent(idx);
+  const grayAdj = adj.filter(i => grid[i]==='gray');
+  if (grayAdj.length > 0) {
+    grayAdj.forEach(i => grid[i]='white');
+  } else {
+    grid[idx] = 'gray';
+  }
+}
+
+function applyBlue(idx) {
+  const centerColor = grid[4]; // Blue copies the centre tile's behaviour
+  if (idx === 4) return;       // pressing the centre does nothing extra
+  if (centerColor === 'blue' || centerColor === 'gray') return; // nothing to copy
+  // Run the centre colour's action from the blue tile's position. The blue tile
+  // keeps its own colour. Movement rules (green swap, yellow/purple shift, black
+  // row-rotate, pink ring-rotate) relocate tiles — blue travels with them and
+  // stays blue. Recolour-in-place rules (orange/white/red) must NOT repaint blue,
+  // so we restore it at idx afterwards.
+  const before = grid[idx]; // 'blue'
+  pressTileEffect(idx, centerColor);
+  if (RECOLOR_IN_PLACE.has(centerColor)) {
+    grid[idx] = before;
+  }
+}
+
+// Rules that repaint the pressed tile in place (blue must stay blue for these)
+const RECOLOR_IN_PLACE = new Set(['orange','white','red']);
+
+function pressTileEffect(idx, color) {
+  switch(color) {
+    case 'green':  applyGreen(idx); break;
+    case 'yellow': applyYellow(idx); break;
+    case 'purple': applyPurple(idx); break;
+    case 'red':    applyRed(idx); break;
+    case 'pink':   applyPink(idx); break;
+    case 'black':  applyBlack(idx); break;
+    case 'orange': applyOrange(idx); break;
+    case 'white':  applyWhite(idx); break;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// CORNER TAPPING
+// ══════════════════════════════════════════════════════
+function tapCorner(ci) {
+  const gridIdx = [0,2,6,8];
+  const gi = gridIdx[ci];
+
+  if (cornersLit[ci]) return; // already lit
+
+  if (grid[gi] === currentLevel.target) {
+    cornersLit[ci] = true;
+    playCornerLit();
+    renderCorners([ci]);
+    checkWin();
+  } else {
+    // Wrong — reset everything
+    playReset();
+    cornersLit = [false,false,false,false];
+    grid = [...currentLevel.initial];
+    moves = 0;
+    elapsed = 0;
+    hintIndex = 0;
+    document.getElementById('hint-text').textContent = '✗ A corner was wrong — the box resets';
+    stopTimer();
+    startTimer();
+    renderGrid();
+    renderCorners();
+  }
+}
+
+function checkAllCorners() {
+  const gridCorners = [0,2,6,8];
+  const allMatch = gridCorners.every(i => grid[i] === currentLevel.target);
+  if (allMatch) {
+    document.getElementById('hint-text').textContent = '✓ All corners match! Tap the corner symbols to unlock.';
+  }
+}
+
+function checkWin() {
+  if (cornersLit.every(Boolean)) {
+    stopTimer();
+    playWin();
+    const firstTime = !completedLevels[currentLevel.id];
+    completedLevels[currentLevel.id] = true;
+    localStorage.setItem('mj-completed', JSON.stringify(completedLevels));
+    updateAllowance();
+
+    // Show the Allowance Token reward only on first completion of a level
+    document.querySelector('.token-reward').style.display = firstTime ? '' : 'none';
+
+    const timeUsed = elapsed;
+    const timeLimit = currentLevel.time;
+    const ratio = timeUsed / timeLimit;
+    let stars = ratio < 0.4 ? '⭐⭐⭐' : ratio < 0.7 ? '⭐⭐' : '⭐';
+
+    document.getElementById('win-stars').textContent = stars;
+    document.getElementById('win-time').textContent = `Time: ${Math.floor(timeUsed/60)}:${(timeUsed%60).toString().padStart(2,'0')}`;
+    document.getElementById('win-moves').textContent = `Moves: ${moves}`;
+    document.getElementById('win-flavour').textContent = currentLevel.flavour;
+    document.getElementById('win-overlay').classList.remove('hidden');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// HINT
+// ══════════════════════════════════════════════════════
+function showHint() {
+  const sol = currentLevel.solution;
+  if (!sol) return; // Court puzzles have no solution
+  if (hintIndex < sol.length) {
+    document.getElementById('hint-text').textContent = `Next: press ${sol[hintIndex]} (step ${hintIndex+1}/${sol.length})`;
+    // Highlight that tile
+    const idx = POS[sol[hintIndex]];
+    const tiles = document.querySelectorAll('.tile');
+    if (tiles[idx]) {
+      tiles[idx].classList.add('flash');
+      setTimeout(() => tiles[idx].classList.remove('flash'), 500);
+    }
+    hintIndex++;
+  } else {
+    document.getElementById('hint-text').textContent = 'Tap each corner symbol to unlock!';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// OVERLAYS
+// ══════════════════════════════════════════════════════
+function closeWin() { document.getElementById('win-overlay').classList.add('hidden'); }
+function closeLose() { document.getElementById('lose-overlay').classList.add('hidden'); }
+
+// ══════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
